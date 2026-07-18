@@ -1,0 +1,739 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Movie Night</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700;9..144,900&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#090909; --surface:#161616; --surface-2:#1F1F1F; --line:#2b2b2b;
+    --red:#E1442F; --red-dim:#7a2418; --amber:#E8A33D; --text:#F5F5F1; --muted:#9a9a9a; --blue:#5B8CFF;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{background:var(--bg); color:var(--text); font-family:'Inter',sans-serif; min-height:100vh; -webkit-font-smoothing:antialiased;}
+  ::-webkit-scrollbar{height:8px; width:8px;}
+  ::-webkit-scrollbar-thumb{background:#333; border-radius:4px;}
+  button{font-family:inherit;}
+  svg{display:block;}
+  .screen{display:none; min-height:100vh;}
+  .screen.active{display:block;}
+
+  /* ---------- Auth ---------- */
+  #auth.active{display:flex; align-items:center; justify-content:center;}
+  #auth{background:radial-gradient(ellipse 900px 600px at 50% 20%, #241210 0%, #090909 60%);}
+  .logo-mark{position:fixed; top:26px; left:32px; font-family:'Fraunces',serif; font-weight:800; color:var(--red); font-size:1.4rem;}
+  .auth-box{width:100%; max-width:380px; background:rgba(0,0,0,0.55); border:1px solid var(--line); border-radius:10px; padding:34px 30px; margin:20px;}
+  .auth-box h2{font-family:'Fraunces',serif; font-weight:700; font-size:1.5rem; margin:0 0 20px;}
+  .auth-box input{width:100%; background:var(--surface-2); border:1px solid #3a3a3a; border-radius:5px; color:var(--text); padding:13px 14px; font-size:0.92rem; margin-bottom:12px; outline:none;}
+  .auth-box input:focus{border-color:var(--text);}
+  .auth-btn{width:100%; background:var(--red); color:#fff; border:none; border-radius:5px; padding:13px; font-weight:700; font-size:0.95rem; cursor:pointer; margin-top:6px;}
+  .auth-btn:hover{background:#c93a29;}
+  .auth-btn:disabled{opacity:0.6; cursor:default;}
+  .auth-switch{color:var(--muted); font-size:0.84rem; margin-top:18px; text-align:center;}
+  .auth-switch a{color:var(--text); cursor:pointer; text-decoration:underline;}
+  .auth-err{color:var(--red); font-size:0.8rem; margin:-4px 0 10px; display:none;}
+
+  /* ---------- Browse ---------- */
+  #browse.active{display:block;}
+  .nav{position:sticky; top:0; z-index:20; display:flex; align-items:center; justify-content:space-between; gap:20px; padding:18px 40px; background:linear-gradient(180deg, rgba(9,9,9,0.95), rgba(9,9,9,0));}
+  .nav-left{display:flex; align-items:center; gap:30px;}
+  .nav .logo{font-family:'Fraunces',serif; font-weight:800; color:var(--red); font-size:1.4rem; flex-shrink:0;}
+  .search-bar{display:flex; align-items:center; gap:8px; background:rgba(255,255,255,0.07); border:1px solid var(--line); border-radius:7px; padding:8px 12px; width:260px;}
+  .search-bar:focus-within{border-color:var(--muted);}
+  .search-bar svg{flex-shrink:0; color:var(--muted); width:16px; height:16px;}
+  .search-bar input{background:none; border:none; outline:none; color:var(--text); font-size:0.85rem; width:100%;}
+  .nav-right{display:flex; align-items:center; gap:14px;}
+  .nav-avatar{width:32px; height:32px; border-radius:6px; background:var(--red); color:#fff; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:0.8rem;}
+  .signout{color:var(--muted); font-size:0.78rem; cursor:pointer; background:none; border:none;}
+  .signout:hover{color:var(--text);}
+
+  .hero{height:50vh; min-height:300px; position:relative; display:flex; align-items:flex-end; padding:0 40px 40px; margin-top:-76px;}
+  .hero-bg{position:absolute; inset:0; z-index:-1; background:radial-gradient(ellipse 900px 600px at 30% 20%, #3a1712 0%, #090909 65%);}
+  .hero-content{max-width:520px;}
+  .hero-eyebrow{font-size:0.72rem; letter-spacing:0.16em; text-transform:uppercase; color:var(--amber); font-weight:700; margin-bottom:10px;}
+  .hero h1{font-family:'Fraunces',serif; font-weight:800; font-size:2.8rem; line-height:1; margin:0 0 14px;}
+  .hero p{color:#d8d8d8; font-size:0.94rem; line-height:1.5; margin:0 0 22px; max-width:440px;}
+  .hero-btn{display:inline-flex; align-items:center; gap:8px; padding:12px 24px; border-radius:6px; border:none; font-weight:700; font-size:0.92rem; cursor:pointer; background:#fff; color:#000;}
+  .hero-btn:hover{background:#e2e2e2;}
+  .hero-btn svg{width:16px; height:16px;}
+
+  .rows{padding:6px 0 60px;}
+  .row{margin-bottom:34px;}
+  .row-title{font-size:1.05rem; font-weight:700; margin:0 0 12px; padding:0 40px;}
+  .row-track{display:flex; gap:12px; overflow-x:auto; padding:4px 40px 14px; scroll-behavior:smooth;}
+  .poster{flex:0 0 auto; width:200px; height:112px; border-radius:6px; position:relative; cursor:pointer; display:flex; align-items:flex-end; padding:12px; overflow:hidden; transition:transform 0.18s ease; border:1px solid rgba(255,255,255,0.06); background-size:cover; background-position:center;}
+  .poster:hover{transform:scale(1.06); z-index:2; box-shadow:0 14px 34px rgba(0,0,0,0.5);}
+  .poster .p-title{font-family:'Fraunces',serif; font-weight:700; font-size:0.98rem; color:#fff; text-shadow:0 2px 8px rgba(0,0,0,0.6); position:relative; z-index:1;}
+  .poster::after{content:''; position:absolute; inset:0; background:linear-gradient(180deg, rgba(0,0,0,0) 40%, rgba(0,0,0,0.6) 100%);}
+  .poster.own{background:var(--surface-2); border:1.5px dashed #4a4a4a; align-items:center; justify-content:center; flex-direction:column; gap:6px;}
+  .poster.own::after{content:none;}
+  .poster.own .plus{color:var(--muted); width:22px; height:22px;}
+  .poster.own .p-title{color:var(--muted); font-family:'Inter',sans-serif; font-weight:600; font-size:0.82rem; text-shadow:none; text-align:center;}
+  .poster.own:hover{border-color:var(--red);}
+  .empty-hint{padding:0 40px; color:var(--muted); font-size:0.85rem;}
+
+  /* ---------- Modal ---------- */
+  .modal-overlay{position:fixed; inset:0; background:rgba(0,0,0,0.75); backdrop-filter:blur(3px); z-index:50; display:none; align-items:center; justify-content:center; padding:20px;}
+  .modal-overlay.show{display:flex;}
+  .modal{background:var(--surface); border:1px solid var(--line); border-radius:12px; width:100%; max-width:440px; padding:28px;}
+  .modal h3{font-family:'Fraunces',serif; font-size:1.3rem; margin:0 0 6px;}
+  .modal p.hint{color:var(--muted); font-size:0.84rem; margin:0 0 18px;}
+  .modal input{width:100%; background:var(--surface-2); border:1px solid #3a3a3a; border-radius:6px; color:var(--text); padding:12px 13px; font-size:0.9rem; margin-bottom:14px; outline:none;}
+  .modal input:focus{border-color:var(--blue);}
+  .modal-err{color:var(--red); font-size:0.8rem; margin:-6px 0 12px; display:none;}
+  .choice-row{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:6px;}
+  .choice-card{background:var(--surface-2); border:1px solid var(--line); border-radius:9px; padding:16px 14px; cursor:pointer; text-align:left;}
+  .choice-card:hover{border-color:var(--red);}
+  .choice-card svg{width:22px; height:22px; margin-bottom:8px; color:var(--amber);}
+  .choice-card b{display:block; font-size:0.88rem; margin-bottom:3px;}
+  .choice-card span{color:var(--muted); font-size:0.76rem; line-height:1.4;}
+  .modal-back{background:none; border:none; color:var(--muted); font-size:0.8rem; cursor:pointer; margin-top:16px;}
+  .modal-back:hover{color:var(--text);}
+
+  /* ---------- Waiting room ---------- */
+  #waiting.active{display:flex;}
+  #waiting{min-height:100vh; align-items:center; justify-content:center; flex-direction:column; padding:20px; text-align:center; background:radial-gradient(ellipse 800px 500px at 50% 30%, #1a1a1a 0%, #090909 65%);}
+  .wait-card{max-width:460px; width:100%;}
+  .wait-eyebrow{color:var(--amber); font-size:0.72rem; letter-spacing:0.14em; text-transform:uppercase; font-weight:700; margin-bottom:10px;}
+  .wait-card h2{font-family:'Fraunces',serif; font-size:1.9rem; margin:0 0 10px;}
+  .wait-card p{color:var(--muted); font-size:0.9rem; margin:0 0 22px; line-height:1.5;}
+  .invite-link{display:flex; gap:8px; background:var(--surface); border:1px solid var(--line); border-radius:8px; padding:6px 6px 6px 16px; align-items:center; margin-bottom:26px;}
+  .invite-link span{font-family:'IBM Plex Mono',monospace; font-size:0.82rem; flex:1; text-align:left; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .invite-link button{background:var(--red); border:none; color:#fff; border-radius:6px; padding:9px 16px; font-weight:700; font-size:0.8rem; cursor:pointer;}
+  .wait-members{display:flex; flex-direction:column; gap:8px; margin-bottom:24px; text-align:left;}
+  .wait-member{display:flex; align-items:center; gap:10px; background:var(--surface); border:1px solid var(--line); border-radius:8px; padding:10px 14px;}
+  .wait-member .av{width:30px; height:30px; border-radius:6px; background:var(--red); color:#fff; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:0.76rem;}
+  .wait-member .nm{flex:1; font-size:0.87rem; font-weight:500;}
+  .wait-member .st{font-size:0.72rem; font-family:'IBM Plex Mono',monospace;}
+  .wait-member.ready .st{color:#6fce8f;}
+  .wait-member.notready .st{color:var(--muted);}
+  .im-ready-btn{width:100%; background:var(--red); color:#fff; border:none; border-radius:7px; padding:14px; font-weight:700; font-size:0.94rem; cursor:pointer; margin-bottom:10px;}
+  .im-ready-btn:hover{background:#c93a29;}
+  .im-ready-btn.ready{background:#1f2b23; border:1px solid #2f5a3f; color:#7fe0a0;}
+  .wait-cancel{background:none; border:none; color:var(--muted); font-size:0.82rem; cursor:pointer;}
+  .wait-cancel:hover{color:var(--text);}
+
+  /* ---------- Player ---------- */
+  #player-screen.active{display:flex;}
+  #player-screen{min-height:100vh; align-items:center; justify-content:center; background:#000;}
+  .player-wrap{position:relative; width:100%; max-width:1400px; aspect-ratio:16/9; background:#000; margin:0 auto;}
+  #player{position:absolute; inset:0; width:100%; height:100%;}
+  .top-bar{position:absolute; top:0; left:0; right:0; padding:20px 26px; display:flex; align-items:center; gap:14px; background:linear-gradient(180deg, rgba(0,0,0,0.75), rgba(0,0,0,0)); z-index:6; transition:opacity 0.3s;}
+  .back-btn{background:rgba(255,255,255,0.12); border:none; color:#fff; width:36px; height:36px; border-radius:50%; cursor:pointer; display:flex; align-items:center; justify-content:center;}
+  .back-btn svg{width:18px; height:18px;}
+  .top-bar .ptitle{font-family:'Fraunces',serif; font-weight:600; font-size:1rem;}
+  .lock-banner{position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); z-index:7; background:rgba(10,10,10,0.9); border:1px solid var(--red-dim); border-radius:12px; padding:18px 26px; display:none; align-items:center; gap:14px; box-shadow:0 10px 40px rgba(0,0,0,0.6); max-width:360px;}
+  .lock-banner.show{display:flex;}
+  .lock-banner .clap{width:34px; height:34px; border-radius:8px; background:var(--amber); color:#1a1305; display:flex; align-items:center; justify-content:center; flex-shrink:0;}
+  .lock-banner .clap svg{width:18px; height:18px;}
+  .lock-banner strong{color:var(--amber);}
+  .lock-banner.mine .clap{background:var(--blue); color:#0b1430;}
+  .lock-banner.mine strong{color:var(--blue);}
+  .lock-banner .txt{font-size:0.86rem; line-height:1.4;}
+  .no-video-msg{position:absolute; inset:0; display:flex; align-items:center; justify-content:center; color:var(--muted); font-size:0.9rem;}
+  .bottom-dashboard{position:absolute; left:0; right:0; bottom:0; z-index:6; padding:34px 26px 18px; background:linear-gradient(0deg, rgba(0,0,0,0.88) 10%, rgba(0,0,0,0) 100%); transition:opacity 0.3s ease, transform 0.3s ease;}
+  .bottom-dashboard.hidden{opacity:0; transform:translateY(6px); pointer-events:none;}
+  .seek-row{display:flex; align-items:center; gap:10px; margin-bottom:12px;}
+  .seek-row input[type=range]{flex:1; accent-color:var(--red); height:3px; cursor:pointer;}
+  .time{font-family:'IBM Plex Mono',monospace; font-size:0.72rem; color:#ccc; min-width:36px;}
+  .dash-controls{display:flex; align-items:center; gap:16px;}
+  .dash-btn{background:none; border:none; color:#fff; cursor:pointer; padding:4px; display:flex; align-items:center; justify-content:center;}
+  .dash-btn svg{width:22px; height:22px;}
+  .dash-btn.play-main svg{width:26px; height:26px;}
+  .dash-btn:disabled{opacity:0.3; cursor:not-allowed;}
+  .dash-members{display:flex; margin-left:auto; align-items:center;}
+  .dash-av{width:28px; height:28px; border-radius:50%; background:var(--red); color:#fff; font-size:0.68rem; font-weight:700; display:flex; align-items:center; justify-content:center; border:2px solid #000; margin-left:-8px;}
+  .dash-av:first-child{margin-left:0;}
+</style>
+</head>
+<body>
+
+<!-- AUTH -->
+<section class="screen active" id="auth">
+  <div class="logo-mark">Movie Night</div>
+  <div class="auth-box">
+    <h2 id="authTitle">Create an account</h2>
+    <div class="auth-err" id="authErr"></div>
+    <input type="text" id="signupUsername" placeholder="Username" />
+    <input type="email" id="authEmail" placeholder="Email" />
+    <input type="password" id="authPassword" placeholder="Password" />
+    <button class="auth-btn" id="authSubmit">Sign up</button>
+    <div class="auth-switch">Already have an account? <a id="authSwitchLink">Sign in instead</a></div>
+  </div>
+</section>
+
+<!-- BROWSE -->
+<section class="screen" id="browse">
+  <div class="nav">
+    <div class="nav-left">
+      <div class="logo">Movie Night</div>
+      <div class="search-bar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+        <input type="text" id="searchInput" placeholder="Search YouTube for a movieâ¦" />
+      </div>
+    </div>
+    <div class="nav-right">
+      <div class="nav-avatar" id="navAvatar">?</div>
+      <button class="signout" id="signoutBtn">Sign out</button>
+    </div>
+  </div>
+  <div class="hero">
+    <div class="hero-bg"></div>
+    <div class="hero-content">
+      <div class="hero-eyebrow">Tonight's pick</div>
+      <h1 id="heroTitle">Low Tide</h1>
+      <p>Search for any movie, or pick a title below, then invite someone â or watch it solo. With friends, the room waits until everyone's pressed play.</p>
+      <button class="hero-btn" id="heroPlayBtn">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+        Play
+      </button>
+      <div style="margin-top:14px;"><a id="haveCodeLink" style="color:var(--muted); font-size:0.82rem; cursor:pointer; text-decoration:underline;">Have an invite code? Join a room â</a></div>
+    </div>
+  </div>
+  <div class="rows" id="rowsContainer"></div>
+</section>
+
+<!-- SET VIDEO MODAL -->
+<div class="modal-overlay" id="setVideoModal">
+  <div class="modal">
+    <div id="modalStep1">
+      <h3 id="modalTitle">Set the video for "Low Tide"</h3>
+      <p class="hint">YouTube-only for now â paste a link and it plays as this title.</p>
+      <input type="text" id="modalVideoUrl" placeholder="Paste a YouTube linkâ¦" />
+      <div class="modal-err" id="modalErr"></div>
+      <button class="auth-btn" id="modalNextBtn">Continue</button>
+    </div>
+    <div id="modalStep2" style="display:none;">
+      <h3>How are you watching?</h3>
+      <p class="hint">Home Alone starts right away. With Friends waits until everyone's pressed play.</p>
+      <div class="choice-row">
+        <div class="choice-card" id="chooseSolo">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 12v6a2 2 0 002 2h14a2 2 0 002-2v-6"/><path d="M3 12l2-6h14l2 6"/><path d="M3 12h18"/></svg>
+          <b>Home Alone</b><span>Just you â starts instantly</span>
+        </div>
+        <div class="choice-card" id="chooseTogether">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="9" cy="8" r="3.2"/><path d="M2.5 20c0-3.5 2.9-6 6.5-6s6.5 2.5 6.5 6"/><circle cx="17.5" cy="9" r="2.6"/><path d="M15.5 14.2c2.7.4 4.5 2.4 4.5 5.3"/></svg>
+          <b>With Friends</b><span>Send a code â waits for everyone</span>
+        </div>
+      </div>
+      <button class="modal-back" id="modalBack">â back</button>
+    </div>
+  </div>
+</div>
+
+<!-- JOIN BY CODE MODAL -->
+<div class="modal-overlay" id="joinCodeModal">
+  <div class="modal">
+    <h3>Join a room</h3>
+    <p class="hint">Enter the code your friend sent you.</p>
+    <input type="text" id="joinCodeInput" placeholder="e.g. MOON-42" style="text-transform:uppercase;" />
+    <div class="modal-err" id="joinCodeErr"></div>
+    <button class="auth-btn" id="joinCodeSubmit">Join</button>
+  </div>
+</div>
+
+<!-- WAITING ROOM -->
+<section class="screen" id="waiting">
+  <div class="wait-card">
+    <div class="wait-eyebrow">Waiting room</div>
+    <h2 id="waitTitle">Low Tide</h2>
+    <p>Send the code below. The movie starts the moment everyone here has pressed <b>I'm ready</b>.</p>
+    <div class="invite-link"><span id="inviteLinkText">MOON-42</span><button id="copyInviteBtn">Copy code</button></div>
+    <div class="wait-members" id="waitMembers"></div>
+    <button class="im-ready-btn" id="imReadyBtn">I'm ready â¶</button>
+    <button class="wait-cancel" id="waitCancelBtn">Cancel and go back</button>
+  </div>
+</section>
+
+<!-- PLAYER -->
+<section class="screen" id="player-screen">
+  <div class="player-wrap" id="playerWrap">
+    <div id="player"></div>
+    <div class="no-video-msg" id="noVideoMsg" style="display:none;">Video not loaded.</div>
+    <div class="top-bar" id="topBar">
+      <button class="back-btn" id="backBtn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+      </button>
+      <div class="ptitle" id="playerTitle">Low Tide</div>
+    </div>
+    <div class="lock-banner" id="lockBanner">
+      <div class="clap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="8" width="16" height="12" rx="1.5"/><path d="M4 8l1.5-4h13L20 8"/></svg></div>
+      <div class="txt" id="lockText">Held by <strong>Ada</strong> â the movie waits for them to press play</div>
+    </div>
+    <div class="bottom-dashboard" id="bottomDash">
+      <div class="seek-row">
+        <span class="time" id="curTime">0:00</span>
+        <input type="range" id="seekBar" min="0" max="100" value="0" step="0.1" />
+        <span class="time" id="durTime">0:00</span>
+      </div>
+      <div class="dash-controls">
+        <button class="dash-btn play-main" id="playBtn" title="Play">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+        </button>
+        <button class="dash-btn" id="pauseBtn" title="Pause">
+          <svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg>
+        </button>
+        <button class="dash-btn" id="volBtn" title="Mute">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" id="volIcon"><path d="M4 9v6h4l5 4V5L8 9H4z"/><path d="M16 8.5a4.5 4.5 0 010 7"/><path d="M18.5 6a8 8 0 010 12"/></svg>
+        </button>
+        <button class="dash-btn" id="fsBtn" title="Fullscreen">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" id="fsIcon"><path d="M8 3H5a2 2 0 00-2 2v3"/><path d="M16 3h3a2 2 0 012 2v3"/><path d="M8 21H5a2 2 0 01-2-2v-3"/><path d="M16 21h3a2 2 0 002-2v-3"/></svg>
+        </button>
+        <div class="dash-members" id="dashMembers"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+(function(){
+"use strict";
+const socket = io();
+
+// ---------- Identity ----------
+const uid = (crypto.randomUUID ? crypto.randomUUID() : ('u-'+Math.random().toString(36).slice(2)));
+let myUsername = "";
+const COLORS = ["#E1442F","#5B8CFF","#7FD8A6","#E8A33D","#C792EA","#6FD1D1"];
+function colorFor(id){ let h=0; for(let i=0;i<id.length;i++) h=(h*31+id.charCodeAt(i))>>>0; return COLORS[h%COLORS.length]; }
+function initials(name){ return (name||"?").trim().split(/\s+/).slice(0,2).map(w=>w[0]?.toUpperCase()||"").join("")||"?"; }
+function showScreen(id){ document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); document.getElementById(id).classList.add('active'); }
+
+// ---------- Auth ----------
+let authMode = 'signup';
+document.getElementById('authSwitchLink').addEventListener('click', ()=>{
+  authMode = authMode === 'signup' ? 'login' : 'signup';
+  document.getElementById('authTitle').textContent = authMode === 'signup' ? 'Create an account' : 'Sign in';
+  document.getElementById('authSubmit').textContent = authMode === 'signup' ? 'Sign up' : 'Sign in';
+  document.getElementById('authSwitchLink').textContent = authMode === 'signup' ? 'Sign in instead' : 'Create one instead';
+  document.getElementById('authSwitchLink').previousSibling.textContent = authMode === 'signup' ? 'Already have an account? ' : "Don't have an account? ";
+  document.getElementById('signupUsername').style.display = authMode === 'signup' ? 'block' : 'none';
+});
+document.getElementById('authSubmit').addEventListener('click', async ()=>{
+  const email = document.getElementById('authEmail').value.trim();
+  const password = document.getElementById('authPassword').value;
+  const username = document.getElementById('signupUsername').value.trim();
+  const errEl = document.getElementById('authErr');
+  errEl.style.display = 'none';
+  const btn = document.getElementById('authSubmit');
+  btn.disabled = true;
+  try{
+    const endpoint = authMode === 'signup' ? '/api/signup' : '/api/login';
+    const body = authMode === 'signup' ? { email, password, username } : { email, password };
+    const r = await fetch(endpoint, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
+    const data = await r.json();
+    if(!r.ok){ errEl.textContent = data.error || 'Something went wrong.'; errEl.style.display='block'; btn.disabled=false; return; }
+    myUsername = data.username;
+    afterLogin();
+  }catch(e){
+    errEl.textContent = 'Could not reach the server.'; errEl.style.display='block';
+  }
+  btn.disabled = false;
+});
+async function checkSession(){
+  try{
+    const r = await fetch('/api/me');
+    if(r.ok){ const data = await r.json(); myUsername = data.username; afterLogin(); }
+  }catch(e){}
+}
+function afterLogin(){
+  document.getElementById('navAvatar').textContent = initials(myUsername);
+  document.getElementById('navAvatar').style.background = colorFor(uid);
+  buildRows();
+  loadHistory();
+  showScreen('browse');
+}
+document.getElementById('signoutBtn').addEventListener('click', async ()=>{
+  await fetch('/api/logout', { method:'POST' });
+  myUsername = '';
+  document.getElementById('authEmail').value=''; document.getElementById('authPassword').value=''; document.getElementById('signupUsername').value='';
+  showScreen('auth');
+});
+checkSession();
+
+// ---------- Catalog (original placeholder titles, not real films) ----------
+const CATALOG = {
+  "Tonight's Row": [
+    {t:"Low Tide", c:"#2b3a4a"}, {t:"Paper Static", c:"#4a2b3a"}, {t:"Nightshift", c:"#2b4a3a"},
+    {t:"Halfway Home", c:"#4a3a2b"}, {t:"Afterglow", c:"#3a2b4a"}
+  ],
+  "Trending With Friends": [
+    {t:"The Long Weekend", c:"#4a2b2b"}, {t:"Blue Hour", c:"#2b3f4a"}, {t:"Departures", c:"#3a4a2b"},
+    {t:"Slow Burn", c:"#4a3f2b"}, {t:"Nocturne", c:"#2b4a44"}
+  ],
+  "Because It's Quiet Tonight": [
+    {t:"Aftercare", c:"#3a2b2b"}, {t:"Take the Long Way", c:"#2b2b4a"}, {t:"Static & Light", c:"#4a2b44"},
+    {t:"Wide Awake", c:"#2b4a2f"}, {t:"Overnight", c:"#4a3a3a"}
+  ]
+};
+let historyItems = [];
+function buildRows(){
+  const container = document.getElementById('rowsContainer');
+  container.innerHTML = '';
+
+  if(historyItems.length){
+    const row = document.createElement('div'); row.className='row';
+    row.innerHTML = `<div class="row-title">Continue Watching</div>`;
+    const track = document.createElement('div'); track.className='row-track';
+    historyItems.forEach(h=>{
+      const p = document.createElement('div'); p.className='poster';
+      if(h.thumbnail) p.style.backgroundImage = `url(${h.thumbnail})`;
+      else p.style.background = `linear-gradient(135deg, ${colorFor(h.title)}, #0c0c0c)`;
+      p.innerHTML = `<div class="p-title">${h.title}</div>`;
+      p.addEventListener('click', ()=>{ pendingTitle=h.title; pendingVideoId=h.video_id; pendingThumbnail=h.thumbnail; openModalStep2(); });
+      track.appendChild(p);
+    });
+    row.appendChild(track);
+    container.appendChild(row);
+  }
+
+  Object.keys(CATALOG).forEach((rowName, idx)=>{
+    const row = document.createElement('div'); row.className='row';
+    const h = document.createElement('div'); h.className='row-title'; h.textContent = rowName;
+    row.appendChild(h);
+    const track = document.createElement('div'); track.className='row-track';
+    CATALOG[rowName].forEach(item=>{
+      const p = document.createElement('div'); p.className='poster';
+      p.style.background = `linear-gradient(135deg, ${item.c}, #0c0c0c)`;
+      p.innerHTML = `<div class="p-title">${item.t}</div>`;
+      p.addEventListener('click', ()=> openSetVideoModal(item.t));
+      track.appendChild(p);
+    });
+    if(idx===0){
+      const own = document.createElement('div'); own.className='poster own';
+      own.innerHTML = `<svg class="plus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 5v14M5 12h14"/></svg><div class="p-title">Bring your own<br/>YouTube link</div>`;
+      own.addEventListener('click', ()=> openSetVideoModal('Your Pick'));
+      track.appendChild(own);
+    }
+    row.appendChild(track);
+    container.appendChild(row);
+  });
+}
+document.getElementById('heroPlayBtn').addEventListener('click', ()=> openSetVideoModal(document.getElementById('heroTitle').textContent));
+
+async function loadHistory(){
+  try{
+    const r = await fetch('/api/history');
+    if(r.ok){ const data = await r.json(); historyItems = data.history || []; buildRows(); }
+  }catch(e){}
+}
+
+// ---------- Search ----------
+let searchDebounce = null;
+document.getElementById('searchInput').addEventListener('input', (e)=>{
+  clearTimeout(searchDebounce);
+  const q = e.target.value.trim();
+  if(!q){ buildRows(); return; }
+  searchDebounce = setTimeout(()=> runSearch(q), 500);
+});
+async function runSearch(q){
+  try{
+    const r = await fetch('/api/youtube-search?q='+encodeURIComponent(q));
+    const data = await r.json();
+    if(!r.ok){ return; }
+    renderSearchResults(data.results || [], q);
+  }catch(e){}
+}
+function renderSearchResults(results, q){
+  const container = document.getElementById('rowsContainer');
+  container.innerHTML = '';
+  const row = document.createElement('div'); row.className='row';
+  row.innerHTML = `<div class="row-title">Results for "${q}"</div>`;
+  if(!results.length){
+    row.innerHTML += `<div class="empty-hint">No results â try a different search.</div>`;
+    container.appendChild(row);
+    return;
+  }
+  const track = document.createElement('div'); track.className='row-track';
+  results.forEach(item=>{
+    const p = document.createElement('div'); p.className='poster';
+    p.style.backgroundImage = `url(${item.thumbnail})`;
+    p.innerHTML = `<div class="p-title">${item.title.length>40?item.title.slice(0,40)+'â¦':item.title}</div>`;
+    p.addEventListener('click', ()=>{ pendingTitle=item.title; pendingVideoId=item.videoId; pendingThumbnail=item.thumbnail; openModalStep2(); });
+    track.appendChild(p);
+  });
+  row.appendChild(track);
+  container.appendChild(row);
+}
+
+// ---------- Set-video modal ----------
+let pendingTitle='', pendingVideoId='', pendingThumbnail=null;
+function openSetVideoModal(title){
+  pendingTitle = title; pendingThumbnail = null;
+  document.getElementById('modalTitle').textContent = `Set the video for "${title}"`;
+  document.getElementById('modalVideoUrl').value = '';
+  document.getElementById('modalErr').style.display = 'none';
+  document.getElementById('modalStep1').style.display = 'block';
+  document.getElementById('modalStep2').style.display = 'none';
+  document.getElementById('setVideoModal').classList.add('show');
+}
+function openModalStep2(){
+  document.getElementById('modalStep1').style.display = 'none';
+  document.getElementById('modalStep2').style.display = 'block';
+  document.getElementById('setVideoModal').classList.add('show');
+}
+document.getElementById('setVideoModal').addEventListener('click', e=>{
+  if(e.target.id === 'setVideoModal') document.getElementById('setVideoModal').classList.remove('show');
+});
+function extractYouTubeId(url){
+  if(!url) return null; url = url.trim();
+  if(/^[a-zA-Z0-9_-]{11}$/.test(url)) return url;
+  const pats=[/(?:youtube\.com\/watch\?v=)([a-zA-Z0-9_-]{11})/, /(?:youtu\.be\/)([a-zA-Z0-9_-]{11})/, /(?:youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/];
+  for(const p of pats){ const m=url.match(p); if(m) return m[1]; }
+  return null;
+}
+document.getElementById('modalNextBtn').addEventListener('click', ()=>{
+  const id = extractYouTubeId(document.getElementById('modalVideoUrl').value);
+  if(!id){ const e=document.getElementById('modalErr'); e.textContent="Couldn't find a YouTube video in that link."; e.style.display='block'; return; }
+  pendingVideoId = id;
+  openModalStep2();
+});
+document.getElementById('modalBack').addEventListener('click', ()=>{
+  document.getElementById('modalStep1').style.display='block';
+  document.getElementById('modalStep2').style.display='none';
+});
+document.getElementById('chooseSolo').addEventListener('click', ()=> startRoom(true));
+document.getElementById('chooseTogether').addEventListener('click', ()=> startRoom(false));
+
+// ---------- Room / real-time sync via Socket.io ----------
+let roomCode = '';
+function genCode(){
+  const words=["MOON","REEL","POPCORN","DUSK","GLOW","NOVA","ATLAS","ECHO"];
+  return words[Math.floor(Math.random()*words.length)]+"-"+Math.floor(10+Math.random()*89);
+}
+async function startRoom(solo){
+  document.getElementById('setVideoModal').classList.remove('show');
+  roomCode = genCode();
+  socket.emit('create-room', { roomCode, title: pendingTitle, videoId: pendingVideoId, solo, uid, name: myUsername });
+  fetch('/api/history', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ title: pendingTitle, videoId: pendingVideoId, thumbnail: pendingThumbnail }) }).catch(()=>{});
+  if(solo){
+    document.getElementById('playerTitle').textContent = pendingTitle;
+    showScreen('player-screen');
+    armDashboardAutohide();
+  } else {
+    document.getElementById('waitTitle').textContent = pendingTitle;
+    document.getElementById('inviteLinkText').textContent = roomCode;
+    showScreen('waiting');
+  }
+}
+
+document.getElementById('haveCodeLink').addEventListener('click', ()=>{
+  document.getElementById('joinCodeInput').value = '';
+  document.getElementById('joinCodeErr').style.display = 'none';
+  document.getElementById('joinCodeModal').classList.add('show');
+});
+document.getElementById('joinCodeModal').addEventListener('click', e=>{
+  if(e.target.id === 'joinCodeModal') document.getElementById('joinCodeModal').classList.remove('show');
+});
+document.getElementById('joinCodeSubmit').addEventListener('click', ()=>{
+  const code = document.getElementById('joinCodeInput').value.trim().toUpperCase();
+  if(!code) return;
+  roomCode = code;
+  socket.emit('join-room', { roomCode, uid, name: myUsername });
+  document.getElementById('joinCodeModal').classList.remove('show');
+  showScreen('waiting');
+});
+socket.on('join-error', (msg)=>{
+  const e = document.getElementById('joinCodeErr');
+  e.textContent = msg; e.style.display = 'block';
+  document.getElementById('joinCodeModal').classList.add('show');
+});
+
+let latestRoom = null;
+socket.on('room-update', (room)=>{
+  if(!room) return;
+  latestRoom = room;
+  document.getElementById('waitTitle').textContent = room.title;
+  document.getElementById('inviteLinkText').textContent = roomCode;
+  if(!room.started){
+    if(!document.getElementById('waiting').classList.contains('active')) showScreen('waiting');
+    applyWaitingUI(room);
+  } else {
+    if(!document.getElementById('player-screen').classList.contains('active')){
+      document.getElementById('playerTitle').textContent = room.title;
+      showScreen('player-screen');
+      armDashboardAutohide();
+    }
+    applyRoomToUI(room);
+  }
+});
+
+function applyWaitingUI(room){
+  const wrap = document.getElementById('waitMembers'); wrap.innerHTML = '';
+  Object.keys(room.members).forEach(id=>{
+    const m = room.members[id]; const isReady = !!room.ready[id];
+    const div = document.createElement('div');
+    div.className = 'wait-member ' + (isReady ? 'ready':'notready');
+    div.innerHTML = `<div class="av" style="background:${colorFor(id)}">${initials(m.name)}</div>
+      <div class="nm">${m.name}${id===uid?' (you)':''}</div>
+      <div class="st">${isReady ? 'ready' : 'waiting'}</div>`;
+    wrap.appendChild(div);
+  });
+  const btn = document.getElementById('imReadyBtn');
+  if(room.ready[uid]){ btn.textContent = "You're ready â waiting for others"; btn.classList.add('ready'); }
+  else{ btn.textContent = "I'm ready â¶"; btn.classList.remove('ready'); }
+}
+document.getElementById('imReadyBtn').addEventListener('click', ()=>{ socket.emit('set-ready'); });
+document.getElementById('copyInviteBtn').addEventListener('click', ()=>{
+  navigator.clipboard?.writeText(roomCode).catch(()=>{});
+  const b=document.getElementById('copyInviteBtn'); const old=b.textContent;
+  b.textContent='Copied!'; setTimeout(()=>b.textContent=old,1200);
+});
+document.getElementById('waitCancelBtn').addEventListener('click', ()=>{ showScreen('browse'); });
+
+// ---------- YouTube player (direct iframe + postMessage, no external script) ----------
+let ytFrame=null, currentLoadedId=null, curTimeLocal=0, durLocal=0, playerStateLocal=-1, suppressEvents=false, seekDragging=false, lastAppliedTS=0;
+function ytEmbedUrl(id){
+  return `https://www.youtube.com/embed/${id}?enablejsapi=1&controls=0&disablekb=1&modestbranding=1&rel=0&iv_load_policy=3&playsinline=1&origin=${encodeURIComponent(location.origin)}`;
+}
+function ensureFrame(id){
+  const container = document.getElementById('player');
+  container.innerHTML = '';
+  ytFrame = document.createElement('iframe');
+  ytFrame.id = 'ytFrame';
+  ytFrame.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;border:0;';
+  ytFrame.setAttribute('allow', 'autoplay; encrypted-media; fullscreen');
+  ytFrame.src = ytEmbedUrl(id);
+  container.appendChild(ytFrame);
+  currentLoadedId = id;
+  curTimeLocal = 0; durLocal = 0; playerStateLocal = -1;
+}
+function ytCmd(func, args){
+  if(!ytFrame || !ytFrame.contentWindow) return;
+  try{ ytFrame.contentWindow.postMessage(JSON.stringify({event:'command', func:func, args:args||[]}), '*'); }catch(e){}
+}
+setInterval(()=>{
+  if(ytFrame && ytFrame.contentWindow){
+    try{ ytFrame.contentWindow.postMessage(JSON.stringify({event:'listening', id:'mn'}), '*'); }catch(e){}
+  }
+}, 1000);
+window.addEventListener('message', e=>{
+  if(typeof e.data !== 'string') return;
+  let data; try{ data = JSON.parse(e.data); }catch(err){ return; }
+  if(data.event === 'infoDelivery' && data.info){
+    if(typeof data.info.currentTime === 'number') curTimeLocal = data.info.currentTime;
+    if(typeof data.info.duration === 'number' && data.info.duration>0) durLocal = data.info.duration;
+    if(typeof data.info.playerState === 'number'){
+      const prev = playerStateLocal;
+      playerStateLocal = data.info.playerState;
+      if(!suppressEvents && prev !== 0 && playerStateLocal === 0) pushPlayback({isPlaying:false, time:durLocal});
+    }
+  }
+});
+function safeCur(){ return curTimeLocal || 0; }
+function safeDur(){ return durLocal || 0; }
+function fmt(s){ s=Math.max(0,Math.floor(s||0)); return Math.floor(s/60)+":"+String(s%60).padStart(2,'0'); }
+setInterval(()=>{
+  if(!ytFrame || !document.getElementById('player-screen').classList.contains('active')) return;
+  const cur=safeCur(), dur=safeDur();
+  if(dur>0){ document.getElementById('seekBar').max=dur; if(!seekDragging) document.getElementById('seekBar').value=cur; document.getElementById('durTime').textContent=fmt(dur); }
+  document.getElementById('curTime').textContent = fmt(cur);
+}, 500);
+
+function pushPlayback(partial){ socket.emit('playback', partial); }
+
+function applyRoomToUI(room){
+  if(!room) return;
+  const dm = document.getElementById('dashMembers'); dm.innerHTML='';
+  Object.keys(room.members).forEach(id=>{
+    const m = room.members[id]; const av = document.createElement('div');
+    av.className='dash-av'; av.style.background = colorFor(id); av.title = m.name;
+    av.textContent = initials(m.name); dm.appendChild(av);
+  });
+
+  if(room.videoId){
+    document.getElementById('noVideoMsg').style.display='none';
+    if(currentLoadedId !== room.videoId){
+      suppressEvents = true;
+      ensureFrame(room.videoId);
+      setTimeout(()=>{ suppressEvents=false; }, 1200);
+    }
+  } else {
+    document.getElementById('noVideoMsg').style.display='flex';
+  }
+
+  const pb = room.playback;
+  const banner=document.getElementById('lockBanner'), lockText=document.getElementById('lockText');
+  if(pb.lockedBy){
+    banner.classList.add('show');
+    if(pb.lockedBy===uid){ banner.classList.add('mine'); lockText.innerHTML = `<strong>You</strong> paused it â press play when you're ready`; }
+    else{ banner.classList.remove('mine'); lockText.innerHTML = `Held by <strong>${(room.members[pb.lockedBy]||{}).name || pb.lockedByName || 'someone'}</strong> â the movie waits for them`; }
+  } else banner.classList.remove('show');
+
+  const iCanPlay = !pb.lockedBy || pb.lockedBy===uid;
+  document.getElementById('playBtn').disabled = !iCanPlay;
+  document.getElementById('pauseBtn').disabled = !pb.isPlaying;
+  document.getElementById('seekBar').disabled = !iCanPlay;
+
+  if(ytFrame && room.videoId){
+    const age=Date.now()-pb.updatedAt;
+    const est = pb.isPlaying ? pb.time+Math.min(age/1000,5) : pb.time;
+    const drift = Math.abs(safeCur()-est);
+    if(pb.updatedAt !== lastAppliedTS){
+      if(drift>1.5){ suppressEvents=true; ytCmd('seekTo',[est,true]); setTimeout(()=>suppressEvents=false,400); }
+      if(pb.isPlaying){ if(playerStateLocal!==1) ytCmd('playVideo'); }
+      else{ if(playerStateLocal!==2) ytCmd('pauseVideo'); }
+      lastAppliedTS = pb.updatedAt;
+    }
+  }
+}
+
+document.getElementById('playBtn').addEventListener('click', ()=>{
+  if(latestRoom && latestRoom.playback.lockedBy && latestRoom.playback.lockedBy!==uid) return;
+  pushPlayback({isPlaying:true, time:safeCur(), lockedBy:null, lockedByName:null});
+  ytCmd('playVideo');
+});
+document.getElementById('pauseBtn').addEventListener('click', ()=>{
+  pushPlayback({isPlaying:false, time:safeCur(), lockedBy:uid, lockedByName:myUsername});
+  ytCmd('pauseVideo');
+});
+document.getElementById('seekBar').addEventListener('mousedown', ()=>seekDragging=true);
+document.getElementById('seekBar').addEventListener('touchstart', ()=>seekDragging=true);
+document.getElementById('seekBar').addEventListener('change', e=>{
+  seekDragging=false;
+  if(latestRoom && latestRoom.playback.lockedBy && latestRoom.playback.lockedBy!==uid) return;
+  const t=parseFloat(e.target.value);
+  ytCmd('seekTo',[t,true]);
+  pushPlayback({time:t});
+});
+let muted=false;
+document.getElementById('volBtn').addEventListener('click', ()=>{
+  if(!ytFrame) return; muted=!muted;
+  const icon = document.getElementById('volIcon');
+  if(muted){ ytCmd('mute'); icon.innerHTML = '<path d="M4 9v6h4l5 4V5L8 9H4z"/><line x1="16" y1="9" x2="21" y2="14"/><line x1="21" y1="9" x2="16" y2="14"/>'; }
+  else{ ytCmd('unMute'); icon.innerHTML = '<path d="M4 9v6h4l5 4V5L8 9H4z"/><path d="M16 8.5a4.5 4.5 0 010 7"/><path d="M18.5 6a8 8 0 010 12"/>'; }
+});
+
+// Fullscreen
+document.getElementById('fsBtn').addEventListener('click', ()=>{
+  const wrap = document.getElementById('playerWrap');
+  if(!document.fullscreenElement){ wrap.requestFullscreen?.(); }
+  else{ document.exitFullscreen?.(); }
+});
+document.addEventListener('fullscreenchange', ()=>{
+  const icon = document.getElementById('fsIcon');
+  if(document.fullscreenElement){
+    icon.innerHTML = '<path d="M9 3v3a2 2 0 01-2 2H4"/><path d="M15 3v3a2 2 0 002 2h3"/><path d="M9 21v-3a2 2 0 00-2-2H4"/><path d="M15 21v-3a2 2 0 012-2h3"/>';
+  } else {
+    icon.innerHTML = '<path d="M8 3H5a2 2 0 00-2 2v3"/><path d="M16 3h3a2 2 0 012 2v3"/><path d="M8 21H5a2 2 0 01-2-2v-3"/><path d="M16 21h3a2 2 0 002-2v-3"/>';
+  }
+});
+
+document.getElementById('backBtn').addEventListener('click', ()=>{ showScreen('browse'); });
+
+let hideTimer=null;
+function armDashboardAutohide(){
+  const dash=document.getElementById('bottomDash'), top=document.getElementById('topBar');
+  function show(){ dash.classList.remove('hidden'); top.style.opacity='1'; clearTimeout(hideTimer); hideTimer=setTimeout(hide,3000); }
+  function hide(){ dash.classList.add('hidden'); top.style.opacity='0'; }
+  document.getElementById('playerWrap').onmousemove = show;
+  document.getElementById('playerWrap').onclick = show;
+  show();
+}
+})();
+</script>
+</body>
+</html>
