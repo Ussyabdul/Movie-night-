@@ -172,7 +172,7 @@
       <div class="logo">Movie Night</div>
       <div class="search-bar">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
-        <input type="text" id="searchInput" placeholder="Search YouTube for a movieâ¦" />
+        <input type="text" id="searchInput" placeholder="Search YouTube for a movie..." />
       </div>
     </div>
     <div class="nav-right">
@@ -185,12 +185,12 @@
     <div class="hero-content">
       <div class="hero-eyebrow">Tonight's pick</div>
       <h1 id="heroTitle">Low Tide</h1>
-      <p>Search for any movie, or pick a title below, then invite someone â or watch it solo. With friends, the room waits until everyone's pressed play.</p>
+      <p>Search for any movie, or pick a title below, then invite someone - or watch it solo. With friends, the room waits until everyone's pressed play.</p>
       <button class="hero-btn" id="heroPlayBtn">
         <svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
         Play
       </button>
-      <div style="margin-top:14px;"><a id="haveCodeLink" style="color:var(--muted); font-size:0.82rem; cursor:pointer; text-decoration:underline;">Have an invite code? Join a room â</a></div>
+      <div style="margin-top:14px;"><a id="haveCodeLink" style="color:var(--muted); font-size:0.82rem; cursor:pointer; text-decoration:underline;">Have an invite code? Join a room -></a></div>
     </div>
   </div>
   <div class="rows" id="rowsContainer"></div>
@@ -201,8 +201,8 @@
   <div class="modal">
     <div id="modalStep1">
       <h3 id="modalTitle">Set the video for "Low Tide"</h3>
-      <p class="hint">YouTube-only for now â paste a link and it plays as this title.</p>
-      <input type="text" id="modalVideoUrl" placeholder="Paste a YouTube linkâ¦" />
+      <p class="hint">YouTube-only for now - paste a link and it plays as this title.</p>
+      <input type="text" id="modalVideoUrl" placeholder="Paste a YouTube link..." />
       <div class="modal-err" id="modalErr"></div>
       <button class="auth-btn" id="modalNextBtn">Continue</button>
     </div>
@@ -212,14 +212,14 @@
       <div class="choice-row">
         <div class="choice-card" id="chooseSolo">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 12v6a2 2 0 002 2h14a2 2 0 002-2v-6"/><path d="M3 12l2-6h14l2 6"/><path d="M3 12h18"/></svg>
-          <b>Home Alone</b><span>Just you â starts instantly</span>
+          <b>Home Alone</b><span>Just you - starts instantly</span>
         </div>
         <div class="choice-card" id="chooseTogether">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="9" cy="8" r="3.2"/><path d="M2.5 20c0-3.5 2.9-6 6.5-6s6.5 2.5 6.5 6"/><circle cx="17.5" cy="9" r="2.6"/><path d="M15.5 14.2c2.7.4 4.5 2.4 4.5 5.3"/></svg>
-          <b>With Friends</b><span>Send a code â waits for everyone</span>
+          <b>With Friends</b><span>Send a code - waits for everyone</span>
         </div>
       </div>
-      <button class="modal-back" id="modalBack">â back</button>
+      <button class="modal-back" id="modalBack"><- back</button>
     </div>
   </div>
 </div>
@@ -243,7 +243,7 @@
     <p>Send the code below. The movie starts the moment everyone here has pressed <b>I'm ready</b>.</p>
     <div class="invite-link"><span id="inviteLinkText">MOON-42</span><button id="copyInviteBtn">Copy code</button></div>
     <div class="wait-members" id="waitMembers"></div>
-    <button class="im-ready-btn" id="imReadyBtn">I'm ready â¶</button>
+    <button class="im-ready-btn" id="imReadyBtn">I'm ready</button>
     <button class="wait-cancel" id="waitCancelBtn">Cancel and go back</button>
   </div>
 </section>
@@ -261,7 +261,7 @@
     </div>
     <div class="lock-banner" id="lockBanner">
       <div class="clap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="8" width="16" height="12" rx="1.5"/><path d="M4 8l1.5-4h13L20 8"/></svg></div>
-      <div class="txt" id="lockText">Held by <strong>Ada</strong> â the movie waits for them to press play</div>
+      <div class="txt" id="lockText">Held by <strong>Ada</strong> - the movie waits for them to press play</div>
     </div>
     <div class="bottom-dashboard" id="bottomDash">
       <div class="seek-row">
@@ -443,7 +443,7 @@ function renderSearchResults(results, q){
   const row = document.createElement('div'); row.className='row';
   row.innerHTML = `<div class="row-title">Results for "${q}"</div>`;
   if(!results.length){
-    row.innerHTML += `<div class="empty-hint">No results â try a different search.</div>`;
+    row.innerHTML += `<div class="empty-hint">No results - try a different search.</div>`;
     container.appendChild(row);
     return;
   }
@@ -451,7 +451,7 @@ function renderSearchResults(results, q){
   results.forEach(item=>{
     const p = document.createElement('div'); p.className='poster';
     p.style.backgroundImage = `url(${item.thumbnail})`;
-    p.innerHTML = `<div class="p-title">${item.title.length>40?item.title.slice(0,40)+'â¦':item.title}</div>`;
+    p.innerHTML = `<div class="p-title">${item.title.length>40?item.title.slice(0,40)+'...':item.title}</div>`;
     p.addEventListener('click', ()=>{ pendingTitle=item.title; pendingVideoId=item.videoId; pendingThumbnail=item.thumbnail; openModalStep2(); });
     track.appendChild(p);
   });
@@ -573,8 +573,8 @@ function applyWaitingUI(room){
     wrap.appendChild(div);
   });
   const btn = document.getElementById('imReadyBtn');
-  if(room.ready[uid]){ btn.textContent = "You're ready â waiting for others"; btn.classList.add('ready'); }
-  else{ btn.textContent = "I'm ready â¶"; btn.classList.remove('ready'); }
+  if(room.ready[uid]){ btn.textContent = "You're ready - waiting for others"; btn.classList.add('ready'); }
+  else{ btn.textContent = "I'm ready"; btn.classList.remove('ready'); }
 }
 document.getElementById('imReadyBtn').addEventListener('click', ()=>{ socket.emit('set-ready'); });
 document.getElementById('copyInviteBtn').addEventListener('click', ()=>{
@@ -659,8 +659,8 @@ function applyRoomToUI(room){
   const banner=document.getElementById('lockBanner'), lockText=document.getElementById('lockText');
   if(pb.lockedBy){
     banner.classList.add('show');
-    if(pb.lockedBy===uid){ banner.classList.add('mine'); lockText.innerHTML = `<strong>You</strong> paused it â press play when you're ready`; }
-    else{ banner.classList.remove('mine'); lockText.innerHTML = `Held by <strong>${(room.members[pb.lockedBy]||{}).name || pb.lockedByName || 'someone'}</strong> â the movie waits for them`; }
+    if(pb.lockedBy===uid){ banner.classList.add('mine'); lockText.innerHTML = `<strong>You</strong> paused it - press play when you're ready`; }
+    else{ banner.classList.remove('mine'); lockText.innerHTML = `Held by <strong>${(room.members[pb.lockedBy]||{}).name || pb.lockedByName || 'someone'}</strong> - the movie waits for them`; }
   } else banner.classList.remove('show');
 
   const iCanPlay = !pb.lockedBy || pb.lockedBy===uid;
