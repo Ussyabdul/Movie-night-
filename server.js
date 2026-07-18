@@ -6,10 +6,10 @@
 const express = require('express');
 const http = require('http');
 const path = require('path');
+const fs = require('fs');
 const bcrypt = require('bcryptjs');
 const session = require('express-session');
 const { Server } = require('socket.io');
-const Database = require('better-sqlite3');
 
 const app = express();
 const server = http.createServer(app);
@@ -24,32 +24,17 @@ app.use(session({
 }));
 app.use(express.static(path.join(__dirname, 'public')));
 
-// ---------- Database ----------
-const db = new Database(path.join(__dirname, 'movienight.db'));
-db.exec(`
-  CREATE TABLE IF NOT EXISTS users (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    email TEXT UNIQUE NOT NULL,
-    username TEXT NOT NULL,
-    password_hash TEXT NOT NULL,
-    created_at INTEGER
-  );
-  CREATE TABLE IF NOT EXISTS watch_history (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    user_id INTEGER NOT NULL,
-    title TEXT,
-    video_id TEXT,
-    thumbnail TEXT,
-    watched_at INTEGER
-  );
-  CREATE TABLE IF NOT EXISTS rooms (
-    code TEXT PRIMARY KEY,
-    title TEXT,
-    video_id TEXT,
-    solo INTEGER,
-    created_at INTEGER
-  );
-`);
+// ---------- Database (plain JSON file — no native compiling needed) ----------
+const DB_FILE = path.join(__dirname, 'movienight.json');
+function loadDB(){
+  if(fs.existsSync(DB_FILE)){
+    try{ return JSON.parse(fs.readFileSync(DB_FILE, 'utf8')); }catch(e){ /* fall through to fresh db */ }
+  }
+  return { users: [], watchHistory: [], rooms: [], nextUserId: 1 };
+}
+function saveDB(){ fs.writeFileSync(DB_FILE, JSON.stringify(db, null, 2)); }
+const db = loadDB();
+
 
 // ---------- Auth routes ----------
 function requireAuth(req, res, next){
@@ -61,22 +46,24 @@ app.post('/api/signup', async (req, res) => {
   const { email, password, username } = req.body || {};
   if(!email || !password || !username) return res.status(400).json({ error: 'Fill in all fields.' });
   if(password.length < 6) return res.status(400).json({ error: 'Password needs to be at least 6 characters.' });
-  const existing = db.prepare('SELECT id FROM users WHERE email = ?').get(email.toLowerCase());
+  const emailLower = email.toLowerCase();
+  const existing = db.users.find(u => u.email === emailLower);
   if(existing) return res.status(400).json({ error: 'That email already has an account — try signing in.' });
 
   const hash = await bcrypt.hash(password, 10);
-  const info = db.prepare('INSERT INTO users (email, username, password_hash, created_at) VALUES (?,?,?,?)')
-    .run(email.toLowerCase(), username, hash, Date.now());
-  req.session.userId = info.lastInsertRowid;
+  const user = { id: db.nextUserId++, email: emailLower, username, passwordHash: hash, createdAt: Date.now() };
+  db.users.push(user);
+  saveDB();
+  req.session.userId = user.id;
   req.session.username = username;
-  res.json({ id: info.lastInsertRowid, email: email.toLowerCase(), username });
+  res.json({ id: user.id, email: emailLower, username });
 });
 
 app.post('/api/login', async (req, res) => {
   const { email, password } = req.body || {};
-  const user = db.prepare('SELECT * FROM users WHERE email = ?').get((email||'').toLowerCase());
+  const user = db.users.find(u => u.email === (email||'').toLowerCase());
   if(!user) return res.status(400).json({ error: 'No account with that email.' });
-  const ok = await bcrypt.compare(password || '', user.password_hash);
+  const ok = await bcrypt.compare(password || '', user.passwordHash);
   if(!ok) return res.status(400).json({ error: 'Wrong password.' });
   req.session.userId = user.id;
   req.session.username = user.username;
@@ -114,15 +101,18 @@ app.get('/api/youtube-search', requireAuth, async (req, res) => {
 
 // ---------- Watch history ----------
 app.get('/api/history', requireAuth, (req, res) => {
-  const rows = db.prepare('SELECT title, video_id, thumbnail, watched_at FROM watch_history WHERE user_id = ? ORDER BY watched_at DESC LIMIT 20')
-    .all(req.session.userId);
+  const rows = db.watchHistory
+    .filter(h => h.userId === req.session.userId)
+    .sort((a,b) => b.watchedAt - a.watchedAt)
+    .slice(0, 20)
+    .map(h => ({ title: h.title, video_id: h.videoId, thumbnail: h.thumbnail, watched_at: h.watchedAt }));
   res.json({ history: rows });
 });
 app.post('/api/history', requireAuth, (req, res) => {
   const { title, videoId, thumbnail } = req.body || {};
   if(!title || !videoId) return res.status(400).json({ error: 'Missing title or videoId' });
-  db.prepare('INSERT INTO watch_history (user_id, title, video_id, thumbnail, watched_at) VALUES (?,?,?,?,?)')
-    .run(req.session.userId, title, videoId, thumbnail || null, Date.now());
+  db.watchHistory.push({ userId: req.session.userId, title, videoId, thumbnail: thumbnail || null, watchedAt: Date.now() });
+  saveDB();
   res.json({ ok: true });
 });
 
@@ -143,8 +133,9 @@ io.on('connection', (socket) => {
       ready: solo ? { [uid]: true } : {},
       playback: { isPlaying: false, time: 0, lockedBy: null, lockedByName: null, updatedAt: Date.now() },
     };
-    db.prepare('INSERT OR REPLACE INTO rooms (code,title,video_id,solo,created_at) VALUES (?,?,?,?,?)')
-      .run(roomCode, title, videoId, solo ? 1 : 0, Date.now());
+    db.rooms = db.rooms.filter(r => r.code !== roomCode);
+    db.rooms.push({ code: roomCode, title, videoId, solo: !!solo, createdAt: Date.now() });
+    saveDB();
     currentRoom = roomCode; currentUid = uid; currentName = name;
     socket.join(roomCode);
     broadcastRoom(roomCode);
